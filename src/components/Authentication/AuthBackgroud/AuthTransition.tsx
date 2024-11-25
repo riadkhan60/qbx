@@ -3,11 +3,14 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Greetings from '../Geetings/Geetings';
+import { usePathname } from 'next/navigation';
+
 
 
 
 export default function AuthTransition({ children }: { children: React.ReactNode }) {
-  const [showGreeting, setShowGreeting] = useState(true);
+  const params = usePathname();
+  const [showGreeting, setShowGreeting] = useState(params == '/sign-up');
 
   useEffect(() => {
     const timer = setTimeout(() => {

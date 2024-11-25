@@ -24,6 +24,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
+    <ClerkProvider>
     <html lang="en" suppressHydrationWarning>
       <body
         className={`${outfit.className} ${robotoFlex.variable} bg-background overflow-hidden text-foreground`}
@@ -34,9 +35,11 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <ClerkProvider>{children}</ClerkProvider>
+            {children}
+
         </ThemeProvider>
       </body>
     </html>
+          </ClerkProvider>
   );
 }

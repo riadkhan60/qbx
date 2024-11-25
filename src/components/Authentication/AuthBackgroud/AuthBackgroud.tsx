@@ -8,10 +8,11 @@ export default function AuthBackgroud({
   children,
 }: {
   children: React.ReactNode;
-}) {
+  }) {
+  
   return (
     <main className="relative flex w-full h-dvh">
-      <div className="w-[50%] max-lg:hidden relative h-fu overflow-hidden">
+      <div className="w-[50%] max-lg:hidden relative h-full overflow-hidden">
         <div className="relative overflow-hidden w-full h-full z-30">
           <OnBoardingCard />
         </div>

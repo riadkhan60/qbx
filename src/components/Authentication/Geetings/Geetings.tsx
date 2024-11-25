@@ -9,7 +9,7 @@ export default function Greetings() {
   const fullText = 'Get Started With Us';
   const [subText, setSubText] = useState('');
   const fullSubText =
-    'have a nice journey with qbexel for your next Awesomeness';
+    'Embark on your next extraordinary journey with Qbexel';
 
   useEffect(() => {
     const typeText = async () => {
