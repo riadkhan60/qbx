@@ -11,7 +11,7 @@ function calculateWidth(
 }
 
 export default function OnboardingCardBg() {
-  const [displayWidth, setDisplayWidth] = useState(window.innerWidth);
+  const [displayWidth, setDisplayWidth] = useState(1920);
 
   useEffect(() => {
     setDisplayWidth(window.innerWidth);

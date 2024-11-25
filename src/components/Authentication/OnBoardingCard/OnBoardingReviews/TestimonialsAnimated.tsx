@@ -11,6 +11,14 @@ type Testimonial = {
   designation: string;
   src: string;
 };
+
+// Move randomRotateY to client-side only
+const randomRotateY = () => {
+  return typeof window === 'undefined'
+    ? 0
+    : Math.floor(Math.random() * 21) - 10;
+};
+
 export const TestimonialsAnimated = ({
   testimonials,
   autoplay = false,
@@ -20,9 +28,9 @@ export const TestimonialsAnimated = ({
 }) => {
   const [active, setActive] = useState(0);
 
- const handleNext = useCallback(() => {
-   setActive((prev) => (prev + 1) % testimonials.length);
- }, [testimonials]);
+  const handleNext = useCallback(() => {
+    setActive((prev) => (prev + 1) % testimonials.length);
+  }, [testimonials]);
 
   const handlePrev = () => {
     setActive((prev) => (prev - 1 + testimonials.length) % testimonials.length);
@@ -39,9 +47,6 @@ export const TestimonialsAnimated = ({
     }
   }, [autoplay, handleNext]);
 
-  const randomRotateY = () => {
-    return Math.floor(Math.random() * 21) - 10;
-  };
   return (
     <div className="max-w-sm md:max-w-4xl mx-auto antialiased  px-4 md:px-8 lg:px-12 py-20">
       <div className="relative grid grid-cols-1 xl:grid-cols-2  gap-20">
@@ -55,7 +60,7 @@ export const TestimonialsAnimated = ({
                     opacity: 0,
                     scale: 0.9,
                     z: -100,
-                    rotate: randomRotateY(),
+                    rotate: 0,
                   }}
                   animate={{
                     opacity: isActive(index) ? 1 : 0.7,
