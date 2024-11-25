@@ -18,6 +18,7 @@ import {
 import { PersonalInfoStep } from './Signup-Steps/PersonalInfoStep';
 import { CredentialsStep } from './Signup-Steps/CredentialsStep';
 import { VerificationStep } from './Signup-Steps/VerificationStep';
+import {  Loader2 } from 'lucide-react';
 
 function SignUpFormContent() {
   const {
@@ -32,6 +33,8 @@ function SignUpFormContent() {
     setShowErrors,
     handleCreateUser,
     handleVerification,
+    apiErrors,
+    loading
   } = useSignUpContext();
 
   const {
@@ -162,14 +165,16 @@ function SignUpFormContent() {
                 errors={displayErrors}
                 hasInteracted={hasInteracted}
                 direction={direction}
-              />
-            )}
+                apiErrors={apiErrors}
+                />
+              )}
             {step === 2 && (
               <CredentialsStep
-                register={register}
-                errors={displayErrors}
-                hasInteracted={hasInteracted}
-                direction={direction}
+              register={register}
+              errors={displayErrors}
+              hasInteracted={hasInteracted}
+              direction={direction}
+              apiErrors={apiErrors}
               />
             )}
             {step === 3 && (
@@ -178,6 +183,7 @@ function SignUpFormContent() {
                 errors={{ verificationCode: verificationError }}
                 hasInteracted={hasInteracted}
                 direction={direction}
+                apiErrors={apiErrors}
               />
             )}
           </AnimatePresence>
@@ -186,13 +192,15 @@ function SignUpFormContent() {
         <Button
           onClick={step !== 3 ? handleChangeStep : undefined}
           type={step === 3 ? 'submit' : 'button'}
+          disabled={loading}
           className="px-[20px] rounded-[12px] py-[16px] max-md:px-[16px] text-[16px] max-md:text-[14px] max-md:py-[14px] w-full h-[56px] max-sm:h-[48px] my-[32px] font-semibold"
         >
           {step === 1
             ? 'Continue'
             : step === 2
             ? 'Create Account'
-            : 'Verify & Complete'}
+              : 'Verify & Complete'}
+          {loading && <Loader2  className="ml-2 animate-spin" width={20} height={20}  />}
         </Button>
       </form>
       <Link href="/sign-in">

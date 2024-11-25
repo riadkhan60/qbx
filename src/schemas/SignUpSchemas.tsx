@@ -1,3 +1,4 @@
+import { ClerkAPIError } from "@clerk/types";
 import { UseFormRegister } from "react-hook-form";
 import { z } from "zod";
 
@@ -25,6 +26,9 @@ export interface SignUpContextType {
   setShowErrors: (show: boolean) => void;
   handleCreateUser: (data: Partial<SignUpFormValues>) => Promise<void>;
   handleVerification: (code: string) => Promise<void>;
+  apiErrors?: ClerkAPIError[];
+  loading : boolean;
+  setLoading : (loading: boolean) => void;
 }
 
 export interface FormInputProps {
@@ -47,4 +51,5 @@ export interface StepProps {
   errors: Record<string, string | undefined>;
   hasInteracted: boolean;
   direction: number;
+  apiErrors?: ClerkAPIError[];
 }

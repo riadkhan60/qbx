@@ -1,5 +1,5 @@
 import React from 'react';
-import {motion} from 'framer-motion';
+import { motion } from 'framer-motion';
 import FormInput from '@/components/ui/Forms/FormInput';
 import { slideVariants, initialVariants } from '../SignUpAnimation';
 import { StepProps } from '@/schemas/SignUpSchemas';

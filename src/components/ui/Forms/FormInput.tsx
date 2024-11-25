@@ -39,7 +39,7 @@ export default function FormInput({
         className="px-[20px] rounded-[12px] py-[16px] max-md:px-[16px] max-md:py-[14px] w-full h-[56px] max-sm:h-[48px] dark:bg-[#fff]/10 bg-[#F5F5F5]"
         {...register(input)}
       />
-      {error && <p className="text-white/70 text-sm mt-2">{error}</p>}
+      {error && <p className="dark:text-white/70 text-[#111] text-sm mt-2">{error}</p>}
     </div>
   );
 }

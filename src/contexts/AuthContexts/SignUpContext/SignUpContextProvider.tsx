@@ -2,7 +2,8 @@ import React, { createContext, useContext, useState } from 'react';
 import { useSignUp } from '@clerk/nextjs';
 import { redirect } from 'next/navigation';
 import { SignUpContextType, SignUpFormValues } from '@/schemas/SignUpSchemas';
-
+import { ClerkAPIError } from '@clerk/types';
+import { isClerkAPIResponseError } from '@clerk/nextjs/errors';
 
 const SignUpContext = createContext<SignUpContextType | undefined>(undefined);
 
@@ -13,10 +14,13 @@ export function SignUpProvider({ children }: { children: React.ReactNode }) {
   const [hasInteracted, setHasInteracted] = useState(false);
   const [verificationError, setVerificationError] = useState('');
   const [showErrors, setShowErrors] = useState(false);
+  const [apiErrors, setApiErrors] = useState<ClerkAPIError[]>();
+  const [loading, setLoading] = useState(false);
 
   const handleCreateUser = async (data: Partial<SignUpFormValues>) => {
     if (!isLoaded) return;
-
+    setLoading(true);
+    setApiErrors(undefined);
     try {
       const user = await signUp.create({
         emailAddress: data.email,
@@ -30,15 +34,21 @@ export function SignUpProvider({ children }: { children: React.ReactNode }) {
       await signUp.prepareEmailAddressVerification({
         strategy: 'email_code',
       });
-
     } catch (err) {
-      throw err;
+      if (isClerkAPIResponseError(err)) {
+        setApiErrors(err.errors);
+      }
+      const errors = JSON.stringify(err);
+      throw errors;
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleVerification = async (code: string) => {
     if (!isLoaded) return;
-
+    setApiErrors(undefined);
+    setLoading(true);
     try {
       const completeSignUp = await signUp.attemptEmailAddressVerification({
         code,
@@ -52,11 +62,17 @@ export function SignUpProvider({ children }: { children: React.ReactNode }) {
       console.log('Successfully verified and signed up!');
       redirect('/');
     } catch (err) {
-      console.error(err);
-      throw err;
+        if (isClerkAPIResponseError(err)) {
+          setApiErrors(err.errors);
+        }
+        const errors = JSON.stringify(err);
+        throw errors;
+    } finally {
+      setLoading(false);
     }
   };
 
+  
   const value = {
     step,
     direction,
@@ -70,8 +86,11 @@ export function SignUpProvider({ children }: { children: React.ReactNode }) {
     setShowErrors,
     handleCreateUser,
     handleVerification,
+    apiErrors,
+    loading,
+    setLoading,
   };
-
+  
   return (
     <SignUpContext.Provider value={value}>{children}</SignUpContext.Provider>
   );
