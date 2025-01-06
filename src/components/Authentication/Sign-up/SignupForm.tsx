@@ -8,7 +8,7 @@ import { IconArrowLeft } from '@tabler/icons-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import FormSeparator from '@/components/ui/Forms/FormSeparator';
-import SocialSignButton from '@/components/ui/Forms/SocialSignButton';
+import SocialSignUpButton from '@/components/ui/Forms/SocialSignUpButton';
 
 import { SignUpFormValues, signUpSchema } from '@/schemas/SignUpSchemas';
 import {
@@ -61,7 +61,6 @@ function SignUpFormContent() {
   const handleChangeStep = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     if (!hasInteracted) setHasInteracted(true);
-
     if (step === 1) {
       setShowErrors(true);
       const isValid = await trigger(['firstName', 'lastName', 'phoneNumber']);
@@ -126,12 +125,14 @@ function SignUpFormContent() {
         {step !== 3 && (
           <>
             <div className="mt-[58px] max-md:mt-[40px] flex justify-center items-center gap-4">
-              <SocialSignButton
+              <SocialSignUpButton
+                strategy="oauth_github"
                 iconLight="/icons/githubLight.svg"
                 icon="/icons/github.svg"
                 title="Github"
               />
-              <SocialSignButton
+              <SocialSignUpButton
+                strategy="oauth_google"
                 icon="/icons/google.svg"
                 title="Google"
                 iconLight="/icons/google.svg"
@@ -166,15 +167,15 @@ function SignUpFormContent() {
                 hasInteracted={hasInteracted}
                 direction={direction}
                 apiErrors={apiErrors}
-                />
-              )}
+              />
+            )}
             {step === 2 && (
               <CredentialsStep
-              register={register}
-              errors={displayErrors}
-              hasInteracted={hasInteracted}
-              direction={direction}
-              apiErrors={apiErrors}
+                register={register}
+                errors={displayErrors}
+                hasInteracted={hasInteracted}
+                direction={direction}
+                apiErrors={apiErrors}
               />
             )}
             {step === 3 && (
@@ -199,14 +200,18 @@ function SignUpFormContent() {
             ? 'Continue'
             : step === 2
             ? 'Create Account'
-              : 'Verify & Complete'}
-          {loading && <Loader2  className="ml-2 animate-spin" width={20} height={20}  />}
+            : 'Verify & Complete'}
+          {loading && (
+            <Loader2 className="ml-2 animate-spin" width={20} height={20} />
+          )}
         </Button>
       </form>
       <Link href="/sign-in">
         <p className="text-[16px] text-center max-md:text-[14px] font-light dark:text-[#ccc] text-[#4B4B4B]">
           Already have an account?{' '}
-          <span className="dark:text-white font-medium">Sign In</span>
+          <span className="dark:text-white hover:text-black/60 dark:hover:text-white/90 transition-all duration-300 font-medium">
+            Sign In
+          </span>
         </p>
       </Link>
     </div>

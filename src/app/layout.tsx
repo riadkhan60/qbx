@@ -27,8 +27,9 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
         <body
+          suppressHydrationWarning
           className={`${outfit.className} ${robotoFlex.variable}
-        suppressHydrationWarning bg-background overflow-hidden text-foreground`}
+         bg-background overflow-hidden text-foreground`}
         >
           <ThemeProvider
             attribute="class"

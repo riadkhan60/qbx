@@ -6,8 +6,6 @@ import Greetings from '../Geetings/Geetings';
 import { usePathname } from 'next/navigation';
 
 
-
-
 export default function AuthTransition({ children }: { children: React.ReactNode }) {
   const params = usePathname();
   const [showGreeting, setShowGreeting] = useState(params == '/sign-up');
@@ -42,7 +40,7 @@ export default function AuthTransition({ children }: { children: React.ReactNode
   };
 
   return (
-    <div className="w-full h-full flex items-center justify-center  overflow-hidden ">
+    <div key={params} className="w-full h-full flex items-center justify-center  overflow-hidden ">
       <AnimatePresence mode="wait">
         {showGreeting ? (
           <motion.div
