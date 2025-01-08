@@ -53,7 +53,7 @@ function SignInFormContent() {
     <div className="px-6">
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="flex max-w-[436.062px] max-sm:w-[341px] justify-center flex-col items-center"
+        className="flex max-w-[436.062px] max-sm:max-w-[341px] justify-center flex-col items-center"
       >
         <div className="flex flex-col justify-center items-center text-center">
           <h2 className="text-[28px] max-md:text-[24px] mb-2">Sign In Account</h2>
