@@ -88,9 +88,9 @@ function SignUpFormContent() {
   const handleBackStep = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setDirection(-1);
-    setStep(step - 1);
     setShowErrors(false);
     clearErrors();
+    setStep(step - 1);
   };
 
   const getDisplayError = (fieldError?: string) => {
@@ -151,6 +151,7 @@ function SignUpFormContent() {
           {step > 1 && (
             <div className="absolute top-[-20px] right-0">
               <button
+                type="button"
                 onClick={handleBackStep}
                 className="h-7 w-7 rounded-full bg-gray-100 dark:bg-neutral-800 flex items-center justify-center group/button"
               >
@@ -185,6 +186,7 @@ function SignUpFormContent() {
                 hasInteracted={hasInteracted}
                 direction={direction}
                 apiErrors={apiErrors}
+                clearErrors={clearErrors}
               />
             )}
           </AnimatePresence>

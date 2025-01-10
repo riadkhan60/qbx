@@ -24,11 +24,12 @@ export interface SignUpContextType {
   setHasInteracted: (hasInteracted: boolean) => void;
   setVerificationError: (error: string) => void;
   setShowErrors: (show: boolean) => void;
+  handleResendVerification: () => Promise<void>;
   handleCreateUser: (data: Partial<SignUpFormValues>) => Promise<void>;
   handleVerification: (code: string) => Promise<void>;
   apiErrors?: ClerkAPIError[];
-  loading : boolean;
-  setLoading : (loading: boolean) => void;
+  loading: boolean;
+  setLoading: (loading: boolean) => void;
 }
 
 export interface FormInputProps {
@@ -52,4 +53,5 @@ export interface StepProps {
   hasInteracted: boolean;
   direction: number;
   apiErrors?: ClerkAPIError[];
+  clearErrors?: () => void;
 }

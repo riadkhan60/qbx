@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 const isPublicRoute = createRouteMatcher([
   '/sign-in(.*)',
   '/sign-up(.*)',
+  '/forget-password(.*)',
   '/callback(.*)',
 ]);
 

@@ -16,8 +16,14 @@ import FormInput from '@/components/ui/Forms/FormInput';
 import { SignInFormValues, signInSchema } from '@/schemas/SignInSchemas';
 
 function SignInFormContent() {
-  const { loading, showErrors, apiErrors, setShowErrors, handleSignIn } =
-    useSignInContext();
+  const {
+    loading,
+    showErrors,
+    apiErrors,
+    setShowErrors,
+    setApiErrors,
+    handleSignIn,
+  } = useSignInContext();
 
   const {
     register,
@@ -56,7 +62,9 @@ function SignInFormContent() {
         className="flex max-w-[436.062px] max-sm:max-w-[341px] justify-center flex-col items-center"
       >
         <div className="flex flex-col justify-center items-center text-center">
-          <h2 className="text-[28px] max-md:text-[24px] mb-2">Sign In Account</h2>
+          <h2 className="text-[28px] max-md:text-[24px] mb-2">
+            Sign In Account
+          </h2>
           <p className="text-[16px] max-md:text-[14px] dark:text-[#ccc] text-[#4B4B4B]">
             Welcome back! Please enter your details to sign in.
           </p>
@@ -90,15 +98,27 @@ function SignInFormContent() {
             />
           </div>
 
-          <div className="w-full">
+          <div className="w-full relative">
             <FormInput
               label="Password"
               input="password"
               placeholder="Enter your password"
               type="password"
+              onChange={() => {
+                setApiErrors([]);
+              }}
               register={register}
-              error={displayErrors.password || apiErrors?.[0]?.message}
+              error={displayErrors.password || apiErrors[0]?.message}
             />
+
+            {apiErrors[0]?.message ==
+            'Password is incorrect. Try again, or use another method.' ? (
+              <Link href={'/forget-password'}>
+                <p className="text-[14px] absolute top-0 right-0 text-center  mb-[20px] max-md:text-[14px] font-medium dark:text-[#ccc] hover:dark:text-[#fff] duration-300 transition-all6 hover:text-black text-[#4B4B4B] cursor-pointer">
+                  Forgot password?
+                </p>
+              </Link>
+            ) : null}
           </div>
         </div>
 
@@ -117,7 +137,9 @@ function SignInFormContent() {
       <Link href="/sign-up">
         <p className="text-[16px] text-center max-md:text-[14px] font-light dark:text-[#ccc] text-[#4B4B4B]">
           {"Don't"} have an account?{' '}
-          <span className="dark:text-white hover:text-black/60 dark:hover:text-white/90 transition-all duration-300 font-medium">Sign Up</span>
+          <span className="dark:text-white hover:text-black/60 dark:hover:text-white/90 transition-all duration-300 font-medium">
+            Sign Up
+          </span>
         </p>
       </Link>
     </div>

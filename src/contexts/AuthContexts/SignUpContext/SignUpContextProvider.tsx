@@ -44,6 +44,24 @@ export function SignUpProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const handleResendVerification = async () => {
+    if (!isLoaded) return;
+    setApiErrors(undefined);
+    setLoading(true);
+    try {
+      await signUp.prepareEmailAddressVerification({
+        strategy: 'email_code',
+      });
+    } catch (err) {
+      if (isClerkAPIResponseError(err)) {
+        setApiErrors(err.errors);
+      }
+      const errors = JSON.stringify(err);
+      throw errors;
+    } finally {
+      setLoading(false);
+    }
+  }
   const handleVerification = async (code: string) => {
     if (!isLoaded) return;
     setApiErrors(undefined);
@@ -86,6 +104,7 @@ export function SignUpProvider({ children }: { children: React.ReactNode }) {
     setShowErrors,
     handleCreateUser,
     handleVerification,
+    handleResendVerification,
     apiErrors,
     loading,
     setLoading,

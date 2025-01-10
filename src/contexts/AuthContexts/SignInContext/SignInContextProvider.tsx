@@ -58,6 +58,7 @@ export function SignInProvider({ children }: { children: React.ReactNode }) {
         setShowErrors,
         setHasInteracted,
         handleSignIn,
+        setApiErrors,
       }}
     >
       {children}

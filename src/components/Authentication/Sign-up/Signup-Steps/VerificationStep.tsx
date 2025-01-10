@@ -1,14 +1,19 @@
+'use client';
 import { motion } from 'framer-motion';
 import FormInput from '@/components/ui/Forms/FormInput';
 import { slideVariants } from '../SignUpAnimation';
 import { StepProps } from '@/schemas/SignUpSchemas';
+import CompactResendOTPTimer from '@/components/ui/Forms/ResendTimeOut';
+import { useSignUpContext } from '@/contexts/AuthContexts/SignUpContext/SignUpContextProvider';
 
 export function VerificationStep({
   register,
   errors,
   direction,
   apiErrors,
+  clearErrors,
 }: StepProps) {
+  const { handleResendVerification } = useSignUpContext();
   const apiError: string | undefined =
     apiErrors && apiErrors[0] && apiErrors[0].code === 'form_identifier_exists'
       ? 'Email Already Exist'
@@ -38,6 +43,13 @@ export function VerificationStep({
           type="text"
           register={register}
           error={errors.verificationCode || apiError}
+        />
+
+        <CompactResendOTPTimer
+          onResend={async () => {
+            if (clearErrors) clearErrors();   
+            await handleResendVerification();
+          }}
         />
       </div>
     </motion.div>
