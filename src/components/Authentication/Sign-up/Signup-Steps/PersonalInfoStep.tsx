@@ -3,12 +3,15 @@ import { motion } from 'framer-motion';
 import FormInput from '@/components/ui/Forms/FormInput';
 import { slideVariants, initialVariants } from '../SignUpAnimation';
 import { StepProps } from '@/schemas/SignUpSchemas';
+import PhoneFormInput from '@/components/ui/Forms/FormPhoneInput';
+
 
 export function PersonalInfoStep({
   register,
   errors,
   hasInteracted,
   direction,
+  control
 }: StepProps) {
   return (
     <motion.div
@@ -40,12 +43,11 @@ export function PersonalInfoStep({
         />
       </div>
       <div className="w-full">
-        <FormInput
+        <PhoneFormInput
+          name="phoneNumber"
           label="Phone Number"
-          input="phoneNumber"
-          placeholder="eg. +234"
-          type="tel"
-          register={register}
+          control={control}
+          placeholder="(555) 123-4567"
           error={errors.phoneNumber}
         />
       </div>

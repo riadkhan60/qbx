@@ -1,5 +1,6 @@
 import { ClerkAPIError } from "@clerk/types";
-import { UseFormRegister } from "react-hook-form";
+import { Control, UseFormRegister } from "react-hook-form";
+import { Country } from "react-phone-number-input";
 import { z } from "zod";
 
 export const signUpSchema = z.object({
@@ -41,6 +42,17 @@ export interface FormInputProps {
   error?: string;
 }
 
+export interface FormPhoneInputProps {
+  label: string;
+  placeholder: string;
+  name: 'phoneNumber';
+  control?: Control<SignUpFormValues>;
+  error?: string;
+  defaultCountry?: Country;
+  onChange?: (value?: string) => void;
+}
+
+
 export interface SocialSignButtonProps {
   icon: string;
   iconLight: string;
@@ -54,4 +66,6 @@ export interface StepProps {
   direction: number;
   apiErrors?: ClerkAPIError[];
   clearErrors?: () => void;
+  // next line allow any
+  control?: Control<SignUpFormValues>;
 }

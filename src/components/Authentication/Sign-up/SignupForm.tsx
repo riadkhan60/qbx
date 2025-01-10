@@ -42,6 +42,7 @@ function SignUpFormContent() {
     handleSubmit,
     formState: { errors },
     trigger,
+    control,
     getValues,
     clearErrors,
   } = useForm<SignUpFormValues>({
@@ -168,6 +169,7 @@ function SignUpFormContent() {
                 hasInteracted={hasInteracted}
                 direction={direction}
                 apiErrors={apiErrors}
+                control={control}
               />
             )}
             {step === 2 && (
