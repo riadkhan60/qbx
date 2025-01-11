@@ -29,6 +29,7 @@ export default function SocialSignUpButton({
 
   return (
     <button
+      type="button"
       className="group relative h-[56px] max-sm:h-[48px] w-full flex justify-center items-center gap-2 py-4 px-[64.5px] max-sm:px-[44.5px] max-sm:py-[14px] border-[1px] dark:border-[#fff]/20 border-[#EDEDED] rounded-[12px] transition-all duration-300 ease-out hover:scale-[1.0] hover:shadow-lg dark:hover:shadow-white/5 hover:border-transparent dark:hover:bg-[#0f0f0f]/40 hover:bg-gray-50 before:absolute before:inset-0 before:rounded-[12px] before:transition-all before:duration-300 hover:before:scale-[1.02] before:opacity-0 hover:before:opacity-100 before:bg-gradient-to-r before:from-gray-100/50 before:to-transparent dark:before:from-white/5 dark:before:to-transparent"
       onClick={(e) => {
         e.preventDefault();
