@@ -3,12 +3,22 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: { id: string | string[] } },
 ) {
   try {
+    const id = params.id;
+
+    // Validate that id is a single string
+    if (typeof id !== 'string') {
+      return NextResponse.json(
+        { error: 'Invalid user ID format' },
+        { status: 400 },
+      );
+    }
+
     const user = await prisma.user.findUnique({
       where: {
-        clerkID: params.id, // Fix: use context.params.clerkId
+        clerkID: id,
       },
     });
 
