@@ -1,14 +1,14 @@
-
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+
 export async function GET(
   request: NextRequest,
-  { params }: { params: { clerkId: string } },
+  context: { params: { clerkId: string } },
 ) {
   try {
     const user = await prisma.user.findUnique({
       where: {
-        clerkID: params.clerkId,
+        clerkID: context.params.clerkId, // Fix: use context.params.clerkId
       },
     });
 
@@ -17,7 +17,7 @@ export async function GET(
     }
 
     return NextResponse.json(user, { status: 200 });
-  } catch {
+  } catch  {
     return NextResponse.json({ error: 'Error fetching user' }, { status: 500 });
   }
 }
