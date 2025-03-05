@@ -4,6 +4,7 @@ import { SignUpContextType, SignUpFormValues } from '@/schemas/SignUpSchemas';
 import { ClerkAPIError } from '@clerk/types';
 import { isClerkAPIResponseError } from '@clerk/nextjs/errors';
 import { useRouter } from 'next/navigation';
+import { createUser } from '@/actions/user';
 
 const SignUpContext = createContext<SignUpContextType | undefined>(undefined);
 
@@ -16,6 +17,7 @@ export function SignUpProvider({ children }: { children: React.ReactNode }) {
   const [showErrors, setShowErrors] = useState(false);
   const [apiErrors, setApiErrors] = useState<ClerkAPIError[]>();
   const [loading, setLoading] = useState(false);
+  const [accountData, setAccountData] = useState<Partial<SignUpFormValues>>({});
   const router = useRouter();
 
   const handleCreateUser = async (data: Partial<SignUpFormValues>) => {
@@ -33,6 +35,8 @@ export function SignUpProvider({ children }: { children: React.ReactNode }) {
       await signUp.prepareEmailAddressVerification({
         strategy: 'email_code',
       });
+
+      setAccountData(data);
     } catch (err) {
       if (isClerkAPIResponseError(err)) {
         setApiErrors(err.errors);
@@ -61,7 +65,7 @@ export function SignUpProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }
+  };
   const handleVerification = async (code: string) => {
     if (!isLoaded) return;
     setApiErrors(undefined);
@@ -75,7 +79,22 @@ export function SignUpProvider({ children }: { children: React.ReactNode }) {
         throw new Error('Something went wrong. Please try again.');
       }
 
+      const userCreated = await createUser({
+        email: accountData.email || '',
+        firstName: accountData.firstName || '',
+        lastName: accountData.lastName || '',
+        phoneNumber: accountData.phoneNumber || '',
+        clerkID: completeSignUp.id || '',
+      });
+
+      console.log(userCreated)
+      
+      if (userCreated.error) {
+        throw new Error(userCreated.error);
+      }
+
       await setActive({ session: completeSignUp.createdSessionId });
+
       console.log('Successfully verified and signed up!');
 
       router.push('/dashboard');

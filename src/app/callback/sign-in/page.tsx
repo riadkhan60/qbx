@@ -2,6 +2,7 @@ import { currentUser } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 
 const CompleteSigIn = async () => {
+  console.log('sig-in');
   const user = await currentUser();
   if (!user) return redirect('/sign-in');
   return redirect('/');

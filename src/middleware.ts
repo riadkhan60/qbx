@@ -6,7 +6,10 @@ const isPublicRoute = createRouteMatcher([
   '/sign-up(.*)',
   '/forget-password(.*)',
   '/callback(.*)',
+  '/api/users(.*)',
 ]);
+
+// Add a matcher for API routes that need authentication
 
 export default clerkMiddleware(async (auth, request) => {
   const cookieStore = await cookies();
@@ -15,7 +18,6 @@ export default clerkMiddleware(async (auth, request) => {
   const storedRoute = cookieStore.get('baseRoute');
 
   if (!storedRoute) {
-    // First visit - set cookie for future visits
     cookieStore.set('baseRoute', 'sign-in', {
       path: '/',
       maxAge: 60 * 60 * 24 * 30, // 30 days
@@ -28,6 +30,8 @@ export default clerkMiddleware(async (auth, request) => {
 
   const baseUrl = `${new URL(route, request.url).href}`;
 
+
+  // For non-API routes, continue with the regular protection
   if (!isPublicRoute(request)) {
     await auth.protect({
       unauthorizedUrl: baseUrl,

@@ -145,7 +145,7 @@ function SignUpFormContent() {
 
         {/* Since step 3 hide the social buttons (which are mintaining the width) we need to add a div with the same width so this Div is just for ui purpose */}
         {step === 3 && (
-          <div className="mt-[58px] max-md:mt-[40px] max-w-[436.062px] max-sm:max-w-[341px]"></div>
+          <div className="mt-[58px] max-md:mt-[40px] w-[436.062px] max-sm:max-w-[341px]"></div>
         )}
 
         <div className="w-full relative">

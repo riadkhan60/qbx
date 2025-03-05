@@ -3,6 +3,7 @@ import { Outfit, Akaya_Kanadaka } from 'next/font/google';
 import { ThemeProvider } from '@/components/ThemeProvider/ThemeProvider';
 import { ClerkProvider } from '@clerk/nextjs';
 import './globals.css';
+import UserContextProvoder from '@/contexts/UserContext/UserContextProvoder';
 
 // Fonts
 const outfit = Outfit({ subsets: ['latin'] });
@@ -31,14 +32,16 @@ export default function RootLayout({
           className={`${outfit.className} ${robotoFlex.variable}
          bg-background overflow-hidden text-foreground`}
         >
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            {children}
-          </ThemeProvider>
+          <UserContextProvoder>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              {children}
+            </ThemeProvider>
+          </UserContextProvoder>
         </body>
       </html>
     </ClerkProvider>
