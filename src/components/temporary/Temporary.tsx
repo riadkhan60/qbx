@@ -5,7 +5,7 @@ import React, { useEffect } from 'react';
 
 export default function Temporary() {
   const { isSignedIn, user, isLoaded } = useUser();
-  // next line 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [sessions, setSessions] = React.useState<any[]>([]);
 
 
