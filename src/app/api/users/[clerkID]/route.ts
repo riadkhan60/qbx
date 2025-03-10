@@ -3,12 +3,13 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { clerkId: string } },
+  { params }: { params: Promise<{ clerkId: string }> },
 ) {
   try {
+    const { clerkId } = await params;
     const user = await prisma.user.findUnique({
       where: {
-        clerkID: params.clerkId, 
+        clerkID: clerkId,
       },
     });
 
@@ -22,19 +23,19 @@ export async function GET(
   }
 }
 
-
 // PUT /api/users/[clerkId] - Update a user
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { clerkId: string } },
+  { params }: { params: Promise<{ clerkId: string }> },
 ) {
   try {
+    const { clerkId } = await params;
     const body = await request.json();
     const { firstName, lastName, email, phoneNumber } = body;
 
     const user = await prisma.user.update({
       where: {
-        clerkID: params.clerkId,
+        clerkID: clerkId,
       },
       data: {
         firstName,
@@ -56,12 +57,13 @@ export async function PUT(
 // DELETE /api/users/[clerkId] - Delete a user
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { clerkId: string } },
+  { params }: { params: Promise<{ clerkId: string }> },
 ) {
   try {
+    const { clerkId } = await params;
     await prisma.user.delete({
       where: {
-        clerkID: params.clerkId,
+        clerkID: clerkId,
       },
     });
 
