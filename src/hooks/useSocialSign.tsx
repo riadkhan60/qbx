@@ -8,6 +8,8 @@ export default function useSocialSignUp() {
   const { signUp, isLoaded: LoadedSignUp } = useSignUp();
 
   const signInWith = (strategy: OAuthStrategy) => {
+    console.log('sig-in');
+
     if (!LoadedSignIn) return;
     try {
       return signIn.authenticateWithRedirect({

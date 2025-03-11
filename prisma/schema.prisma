@@ -13,11 +13,209 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id          String    @id @default(cuid())
-  clerkID     String    @unique
-  firstName   String
-  lastName    String
-  email       String
-  phoneNumber String
+model VectorStore {
+  id         String   @id @default(uuid())
+  facebookID String   @unique
+  storePath  String
+  business   Business @relation(fields: [businessId], references: [id])
+  businessId String   @unique // Add unique constraint for 1:1 relation
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  
+  @@index([facebookID])
+}
+
+
+
+model Account {
+  id            String    @id @default(cuid())
+  clerkId       String    @unique
+  email         String?    @unique
+  username      String?   @unique
+  firstName     String?
+  lastName      String?
+  imageUrl      String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  businesses    Business[]
+}
+
+
+model Business {
+  id               String              @id @default(uuid())
+  accountId        String?
+  facebookPageId   String              @unique
+  pageName         String
+  description      String?
+  contactInfo       String?
+  profilePictureUrl String?
+  prefix            String?
+  website           String?
+  customerGender    String?              @default("male")
+  apiTokenEntry    ApiTokenEntry?      // Remove fields/references here
+  knowledgeBase    KnowledgeBaseEntry[]
+  vectorStore      VectorStore?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  products         Product[]
+  customers        Customer[]
+  queryCustomers    QueryCustomers[]         
+  orders           Order[] 
+
+  account         Account?             @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  @@index([facebookPageId])
+}
+
+model ApiTokenEntry {
+  id                      String   @id @default(uuid())
+  business                Business @relation(fields: [businessId], references: [id])
+  businessId              String   @unique  // Enforce 1:1 relation
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  openAi                  String?
+  fb_page_access_token    String?
+  fb_verification_token   String?
+  graph_page_access_token String?
+  eden_ai_api_token       String?
+  imgbb_token             String?
+  @@index([businessId])
+}
+
+model KnowledgeBaseEntry {
+  id              String     @id @default(uuid())
+  title           String
+  keywords        String[]   @default([])
+  content         String     @db.Text
+  examples        String     @db.Text
+  rules           String     @db.Text
+  business        Business   @relation(fields: [businessId], references: [id])
+  businessId      String
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@unique([businessId, title])
+  @@index([businessId])
+}
+
+model City {
+  id        Int    @id @default(autoincrement())
+  name      String
+  name_bn   String
+  zones     Zone[]
+  zoneID    Int
+}
+
+model Zone {
+  id        Int    @id @default(autoincrement())
+  name      String
+  name_bn   String
+  city      City   @relation(fields: [cityId], references: [id])
+  cityId    Int
+}
+
+
+//----------------------------------------------------------------------
+
+model Product {
+  id                  String             @id @default(uuid())
+  name                String
+  productIdentityCode String             @unique
+  description         String?             @db.Text
+  shortDescription    String?
+  price               Decimal            @db.Decimal(10, 2)
+  discount            Decimal            @db.Decimal(10, 2)                  
+  availability        Boolean            @default(true)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  productState        String?            @default("in-Stock")
+  deliveryTime        String?            
+  // Business relation
+  business           Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  businessId         String
+  
+  images             ProductImage[]
+  realImages         RealProductImage[]
+  variants           ProductVariant[]
+  hasWarranty  Boolean  @default(false)
+  warrantyTime String?
+
+
+  orderItems         OrderItem[]
+  @@index([businessId])
+}
+
+model ProductImage {
+  id         String  @id @default(uuid())
+  imageName  String
+  imageLink  String
+  product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId  String
+}
+
+model RealProductImage {
+  id         String  @id @default(uuid())
+  imageName  String
+  imageLink  String
+  product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId  String
+}
+
+model ProductVariant {
+  id          String  @id @default(uuid())
+  name        String
+  isAvailable Boolean 
+  product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId   String
+}
+
+
+model Customer {
+  id          String   @id @default(uuid())
+  facebookID  String   @unique
+  name        String?
+  phoneNumber String?
+  address     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  orders      Order[]
+
+  // Business relation
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  businessId String
+}
+
+model Order {
+  id             String      @id @default(uuid())
+  customer       Customer    @relation(fields: [customerId], references: [id])
+  customerId     String
+  items          OrderItem[] // Each order can have multiple items (but no quantity)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  // Business relation
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  businessId String
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  deliveryStatus String?
+  orderId   String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+}
+
+model QueryCustomers {
+  id             String   @id @default(uuid())
+  facebookID     String
+  queryProducts  String
+  messageHistory String?
+
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  businessId String
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
