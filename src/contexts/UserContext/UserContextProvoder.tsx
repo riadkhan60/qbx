@@ -1,34 +1,44 @@
 'use client';
-import { useUser } from "@clerk/nextjs";
-import { createContext, useEffect } from "react";
+import { useUser } from '@clerk/nextjs';
+import { createContext, useEffect, useState } from 'react';
+import React from 'react';
 
 const UserContext = createContext({});
 
-
-import React from 'react'
-
-
-
-export default function UserContextProvoder({ children }: { children: React.ReactNode }) {
+export default function UserContextProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const { user, isLoaded } = useUser();
+  const [userData, setUserData] = useState(null);
 
   useEffect(() => {
-    async function fetchUser() {
-      if (isLoaded) {
+    async function syncUser() {
+      if (isLoaded && user) {
+        try {
+          const response = await fetch('/api/sync-user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+          });
 
-        
-        const userSessions = await user?.getSessions();
+          if (!response.ok) {
+            throw new Error('Failed to sync user');
+          }
 
-        console.log(userSessions);
+          const data = await response.json();
+          setUserData(data);
+        } catch (error) {
+          console.error('Error syncing user:', error);
+        }
       }
     }
-    fetchUser();
-  },[user, isLoaded]);
+    syncUser();
+  }, [user, isLoaded]);
+
   return (
-    <UserContext.Provider value={{}}>
-     {children}
-    </UserContext.Provider>
-  )
+    <UserContext.Provider value={{ userData }}>{children}</UserContext.Provider>
+  );
 }
 
 export const useUserContext = () => {
@@ -36,5 +46,5 @@ export const useUserContext = () => {
   if (context === undefined) {
     throw new Error('useUserContext must be used within a UserContextProvider');
   }
-  return context
-}
+  return context;
+};
