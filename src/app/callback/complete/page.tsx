@@ -1,6 +1,5 @@
 import { currentUser } from '@clerk/nextjs/server';
-import { redirect } from 'next/navigation';
-import { syncUserWithDatabase } from '@/actions/account'; // Adjust path as needed
+import { redirect } from 'next/navigation';// Adjust path as needed
 
 const CompleteOAuthAfterCallback = async () => {
   console.log('sign-up');
@@ -9,7 +8,6 @@ const CompleteOAuthAfterCallback = async () => {
   if (!user) redirect('/sign-in');
 
   // Sync the user with your database
-  await syncUserWithDatabase(user);
 
   return redirect('/dashboard');
 };

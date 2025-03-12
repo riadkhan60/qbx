@@ -1,6 +1,6 @@
 import { currentUser } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
-import { syncUserWithDatabase } from '@/actions/account';  // Adjust path as needed
+ // Adjust path as needed
 
 const CompleteSigIn = async () => {
   console.log('sign-in');
@@ -10,9 +10,9 @@ const CompleteSigIn = async () => {
   
   // Sync the user with your database even during sign-in
   // This handles cases where a user might sign up with one provider and later sign in with another
-  await syncUserWithDatabase(user);
+ 
   
-  return redirect('/');
+  return redirect('/dashboard');
 };
 
 export default CompleteSigIn;

@@ -16,7 +16,6 @@ export default function UserContextProvoder({ children }: { children: React.Reac
     async function fetchUser() {
       if (isLoaded) {
 
-        console.log(user);
         
         const userSessions = await user?.getSessions();
 
