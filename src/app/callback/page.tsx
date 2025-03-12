@@ -5,7 +5,6 @@ import DiscoverLoading from './loading';
 
 const CallBackPage = async () => {
 
-
   return (
     <div>
       <DiscoverLoading />

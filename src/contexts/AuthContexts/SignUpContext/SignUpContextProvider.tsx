@@ -4,7 +4,7 @@ import { SignUpContextType, SignUpFormValues } from '@/schemas/SignUpSchemas';
 import { ClerkAPIError } from '@clerk/types';
 import { isClerkAPIResponseError } from '@clerk/nextjs/errors';
 import { useRouter } from 'next/navigation';
-import { createUser } from '@/actions/user';
+
 
 const SignUpContext = createContext<SignUpContextType | undefined>(undefined);
 
@@ -79,19 +79,20 @@ export function SignUpProvider({ children }: { children: React.ReactNode }) {
         throw new Error('Something went wrong. Please try again.');
       }
 
-      const userCreated = await createUser({
-        email: accountData.email || '',
-        firstName: accountData.firstName || '',
-        lastName: accountData.lastName || '',
-        phoneNumber: accountData.phoneNumber || '',
-        clerkID: completeSignUp.id || '',
-      });
+      console.log(accountData);
+      // const userCreated = await createUser({
+      //   email: accountData.email || '',
+      //   firstName: accountData.firstName || '',
+      //   lastName: accountData.lastName || '',
+      //   phoneNumber: accountData.phoneNumber || '',
+      //   clerkID: completeSignUp.id || '',
+      // });
 
-      console.log(userCreated)
+      // console.log(userCreated)
       
-      if (userCreated.error) {
-        throw new Error(userCreated.error);
-      }
+      // if (userCreated.error) {
+      //   throw new Error(userCreated.error);
+      // }
 
       await setActive({ session: completeSignUp.createdSessionId });
 
