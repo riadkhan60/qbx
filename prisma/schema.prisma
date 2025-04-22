@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -17,60 +11,67 @@ model VectorStore {
   id         String   @id @default(uuid())
   facebookID String   @unique
   storePath  String
-  business   Business @relation(fields: [businessId], references: [id])
-  businessId String   @unique // Add unique constraint for 1:1 relation
+  businessId String   @unique
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-  
+  business   Business @relation(fields: [businessId], references: [id])
+
   @@index([facebookID])
 }
 
-
-
 model Account {
-  id            String    @id @default(cuid())
-  clerkId       String    @unique
-  email         String?    @unique
-  username      String?   @unique
-  firstName     String?
-  lastName      String?
-  imageUrl      String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  businesses    Business[]
+  id          String     @id @default(cuid())
+  clerkId     String     @unique
+  email       String?    @unique
+  username    String?    @unique
+  firstName   String?
+  lastName    String?
+  imageUrl    String?
+  phoneNumber String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  businesses  Business[]
 }
 
-
 model Business {
-  id               String              @id @default(uuid())
-  accountId        String?
-  facebookPageId   String              @unique
-  pageName         String
-  description      String?
+  id                String               @id @default(uuid())
+  accountId         String?
+  facebookPageId    String               @unique
+  pageName          String
+  description       String?
   contactInfo       String?
   profilePictureUrl String?
   prefix            String?
   website           String?
   customerGender    String?              @default("male")
-  apiTokenEntry    ApiTokenEntry?      // Remove fields/references here
-  knowledgeBase    KnowledgeBaseEntry[]
-  vectorStore      VectorStore?
-  createdAt        DateTime            @default(now())
-  updatedAt        DateTime            @updatedAt
-  products         Product[]
-  customers        Customer[]
-  queryCustomers    QueryCustomers[]         
-  orders           Order[] 
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  apiTokenEntry     ApiTokenEntry?
+  account           Account?             @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  customers         Customer[]
+  knowledgeBase     KnowledgeBaseEntry[]
+  orders            Order[]
+  products          Product[]
+  pronunced         Pronunced?
+  queryCustomers    QueryCustomers[]
+  vectorStore       VectorStore?
 
-  account         Account?             @relation(fields: [accountId], references: [id], onDelete: Cascade)
   @@index([facebookPageId])
+}
+
+model Pronunced {
+  id         String   @id @default(uuid())
+  male       String
+  female     String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  businessId String   @unique
+  business   Business @relation(fields: [businessId], references: [id])
 }
 
 model ApiTokenEntry {
   id                      String   @id @default(uuid())
-  business                Business @relation(fields: [businessId], references: [id])
-  businessId              String   @unique  // Enforce 1:1 relation
+  businessId              String   @unique
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
   openAi                  String?
@@ -79,96 +80,91 @@ model ApiTokenEntry {
   graph_page_access_token String?
   eden_ai_api_token       String?
   imgbb_token             String?
+  business                Business @relation(fields: [businessId], references: [id])
+
   @@index([businessId])
 }
 
 model KnowledgeBaseEntry {
-  id              String     @id @default(uuid())
-  title           String
-  keywords        String[]   @default([])
-  content         String     @db.Text
-  examples        String     @db.Text
-  rules           String     @db.Text
-  business        Business   @relation(fields: [businessId], references: [id])
-  businessId      String
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  id         String   @id @default(uuid())
+  title      String
+  keywords   String[] @default([])
+  content    String
+  examples   String
+  rules      String
+  businessId String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  business   Business @relation(fields: [businessId], references: [id])
 
   @@unique([businessId, title])
   @@index([businessId])
 }
 
 model City {
-  id        Int    @id @default(autoincrement())
-  name      String
-  name_bn   String
-  zones     Zone[]
-  zoneID    Int
+  id      Int    @id @default(autoincrement())
+  name    String
+  name_bn String
+  zoneID  Int
+  zones   Zone[]
 }
 
 model Zone {
-  id        Int    @id @default(autoincrement())
-  name      String
-  name_bn   String
-  city      City   @relation(fields: [cityId], references: [id])
-  cityId    Int
+  id      Int    @id @default(autoincrement())
+  name    String
+  name_bn String
+  cityId  Int
+  city    City   @relation(fields: [cityId], references: [id])
 }
-
-
-//----------------------------------------------------------------------
 
 model Product {
   id                  String             @id @default(uuid())
   name                String
   productIdentityCode String             @unique
-  description         String?             @db.Text
+  description         String?
   shortDescription    String?
   price               Decimal            @db.Decimal(10, 2)
-  discount            Decimal            @db.Decimal(10, 2)                  
+  discount            Decimal            @db.Decimal(10, 2)
   availability        Boolean            @default(true)
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
   productState        String?            @default("in-Stock")
-  deliveryTime        String?            
-  // Business relation
-  business           Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  businessId         String
-  
-  images             ProductImage[]
-  realImages         RealProductImage[]
-  variants           ProductVariant[]
-  hasWarranty  Boolean  @default(false)
-  warrantyTime String?
+  deliveryTime        String?
+  businessId          String
+  hasWarranty         Boolean            @default(false)
+  warrantyTime        String?
+  orderItems          OrderItem[]
+  business            Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  images              ProductImage[]
+  variants            ProductVariant[]
+  realImages          RealProductImage[]
 
-
-  orderItems         OrderItem[]
   @@index([businessId])
 }
 
 model ProductImage {
-  id         String  @id @default(uuid())
-  imageName  String
-  imageLink  String
-  product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  productId  String
+  id        String  @id @default(uuid())
+  imageName String
+  imageLink String
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 model RealProductImage {
-  id         String  @id @default(uuid())
-  imageName  String
-  imageLink  String
-  product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  productId  String
+  id        String  @id @default(uuid())
+  imageName String
+  imageLink String
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 model ProductVariant {
   id          String  @id @default(uuid())
   name        String
-  isAvailable Boolean 
-  product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  isAvailable Boolean
   productId   String
+  product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
-
 
 model Customer {
   id          String   @id @default(uuid())
@@ -178,44 +174,48 @@ model Customer {
   address     String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
   orders      Order[]
-
-  // Business relation
-  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  businessId String
 }
 
 model Order {
   id             String      @id @default(uuid())
-  customer       Customer    @relation(fields: [customerId], references: [id])
   customerId     String
-  items          OrderItem[] // Each order can have multiple items (but no quantity)
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
-
-  // Business relation
-  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  businessId String
+  businessId     String
+  deliveryStatus String?
+  business       Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  customer       Customer    @relation(fields: [customerId], references: [id])
+  items          OrderItem[]
 }
 
 model OrderItem {
   id        String  @id @default(uuid())
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  deliveryStatus String?
   orderId   String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Int?
   productId String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 model QueryCustomers {
-  id             String   @id @default(uuid())
-  facebookID     String
-  queryProducts  String
-  messageHistory String?
+  id            String           @id @default(uuid())
+  facebookID    String
+  queryProducts String[]
+  businessId    String
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  messages      MessageHistory[]
+  business      Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
 
-  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  businessId String
-
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+model MessageHistory {
+  id              String         @id @default(uuid())
+  role            String
+  content         String
+  queryCustomerId String
+  createdAt       DateTime       @default(now())
+  queryCustomer   QueryCustomers @relation(fields: [queryCustomerId], references: [id])
 }

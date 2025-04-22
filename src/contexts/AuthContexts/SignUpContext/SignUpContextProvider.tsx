@@ -30,6 +30,9 @@ export function SignUpProvider({ children }: { children: React.ReactNode }) {
         password: data.password,
         firstName: data.firstName,
         lastName: data.lastName,
+        unsafeMetadata: {
+          phoneNumber: data.phoneNumber,
+        }
       });
 
       await signUp.prepareEmailAddressVerification({
