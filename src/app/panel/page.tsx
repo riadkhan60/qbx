@@ -354,7 +354,8 @@ export default function ProductCreateForm() {
             >
               <option value="in-Stock">In Stock</option>
               <option value="out-of-Stock">Out of Stock</option>
-              <option value="coming-soon">Coming Soon</option>
+              <option value="pre-order">Pre Order</option>
+              <option value="pre-order-closed">Pre Order Closed</option>
             </select>
           </div>
 

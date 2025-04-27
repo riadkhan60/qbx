@@ -30,7 +30,7 @@ export default function RootLayout({
         <body
           suppressHydrationWarning
           className={`${outfit.className} ${robotoFlex.variable}
-         bg-background overflow-hidden text-foreground`}
+         bg-background text-foreground`}
         >
           <UserContextProvoder>
             <ThemeProvider
