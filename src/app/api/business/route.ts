@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
       include: {
         products: true,
         knowledgeBase: true,
+        apiTokenEntry: true,
         vectorStore: true,
       },
     });

@@ -18,10 +18,12 @@ type UserState = {
   setAccountId: (id: string) => void;
 };
 
-const useUserStore = create<UserState>((set) => ({
+export const useUserStore = create<UserState>((set) => ({
   accountId: '',
   setAccountId: (id) => set({ accountId: id }),
 }));
+
+
 
 // Function to fetch user data
 const fetchUser = async () => {
@@ -49,6 +51,7 @@ function UserProvider({ children }: { children: React.ReactNode }) {
   // Use useEffect to update Zustand store when data changes
   useEffect(() => {
     if (data) setAccountId(data);
+    console.log('User data:', data);
   }, [data, setAccountId]);
 
   if (error) console.error('Error syncing user:', error);

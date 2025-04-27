@@ -13,8 +13,7 @@ export async function POST() {
       where: { clerkId: user.id },
     });
 
-    console.log('User:', user);
-    console.log('Existing User:', existingUser);
+    
 
     if (existingUser) {
       // Return an object with the ID
