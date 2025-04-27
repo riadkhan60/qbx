@@ -1,4 +1,5 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
+
 // ImgBB Response Interfaces
 interface ImgBBUploadResponse {
   data: {
@@ -90,10 +91,38 @@ interface CombinedUploadParams {
   nyckelProviders?: string[];
 }
 
+// Rate limiting configuration
+interface RateLimitConfig {
+  maxConcurrent: number;
+  delayBetweenRequests: number; // milliseconds
+  maxRetries: number;
+  retryDelay: number; // milliseconds
+}
+
+// Default rate limiting settings
+const DEFAULT_RATE_LIMIT: RateLimitConfig = {
+  maxConcurrent: 2,
+  delayBetweenRequests: 2000, // 1 second between requests
+  maxRetries: 3,
+  retryDelay: 3000, // 2 seconds before retry
+};
+
+/**
+ * Helper function to delay execution
+ */
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Upload an image to ImgBB service
+ */
 async function uploadToImgBB(
   apiKey: string,
   image: File | Blob,
   options?: ImgBBUploadOptions,
+  retryCount = 0,
+  maxRetries = DEFAULT_RATE_LIMIT.maxRetries,
 ): Promise<ImgBBUploadResponse> {
   if (!apiKey) {
     throw new Error('ImgBB API key is required');
@@ -126,16 +155,29 @@ async function uploadToImgBB(
     return response.data;
   } catch (error) {
     console.error('Error uploading to ImgBB:', error);
+
+    // Implement retry mechanism
+    if (retryCount < maxRetries) {
+      console.log(`Retrying ImgBB upload (${retryCount + 1}/${maxRetries})...`);
+      await delay(DEFAULT_RATE_LIMIT.retryDelay * (retryCount + 1));
+      return uploadToImgBB(apiKey, image, options, retryCount + 1, maxRetries);
+    }
+
     throw error;
   }
 }
 
+/**
+ * Upload an image to Nyckel (via EdenAI)
+ */
 async function uploadToNyckel({
   apiKey,
   providers = ['nyckel'],
   imageName,
   file,
   file_url,
+  retryConfig = DEFAULT_RATE_LIMIT,
+  retryCount = 0,
   ...options
 }: {
   apiKey: string;
@@ -143,6 +185,8 @@ async function uploadToNyckel({
   imageName: string;
   file?: File;
   file_url?: string;
+  retryConfig?: RateLimitConfig;
+  retryCount?: number;
 } & NyckelUploadOptions): Promise<EdenAIResponse> {
   try {
     if (!file && !file_url) {
@@ -203,7 +247,37 @@ async function uploadToNyckel({
     );
 
     return response.data;
-  } catch (error: unknown) {
+  } catch (error) {
+    // Handle specific error types differently
+    const axiosError = error as AxiosError;
+    if (axiosError.response?.status === 429) {
+      // Rate limit hit - wait longer before retry
+      if (retryCount < retryConfig.maxRetries) {
+        const waitTime = retryConfig.retryDelay * Math.pow(2, retryCount); // Exponential backoff
+        console.log(
+          `Rate limit hit. Waiting ${waitTime}ms before retry ${
+            retryCount + 1
+          }/${retryConfig.maxRetries}`,
+        );
+        await delay(waitTime);
+        return uploadToNyckel({
+          apiKey,
+          providers,
+          imageName,
+          file,
+          file_url,
+          retryConfig,
+          retryCount: retryCount + 1,
+          ...options,
+        });
+      }
+    } else if (axiosError.response?.status === 400) {
+      console.error(
+        'Bad request to Nyckel API. Check request format:',
+        axiosError.response.data,
+      );
+    }
+
     if (error instanceof Error) {
       console.error(error.message);
     }
@@ -211,11 +285,69 @@ async function uploadToNyckel({
   }
 }
 
+/**
+ * Extract the delete hash from an ImgBB delete URL
+ */
 function extractDeleteHash(deleteUrl: string): string {
   const parts = deleteUrl.split('/');
   return parts[parts.length - 1];
 }
 
+/**
+ * Queue for managing concurrent uploads
+ */
+class UploadQueue {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private queue: Array<() => Promise<any>> = [];
+  private running = 0;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private results: any[] = [];
+  private config: RateLimitConfig;
+
+  constructor(config: RateLimitConfig = DEFAULT_RATE_LIMIT) {
+    this.config = config;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  add(task: () => Promise<any>): void {
+    this.queue.push(task);
+    this.processNext();
+  }
+
+  private async processNext(): Promise<void> {
+    if (this.running >= this.config.maxConcurrent || this.queue.length === 0) {
+      return;
+    }
+
+    this.running++;
+    const task = this.queue.shift()!;
+
+    try {
+      const result = await task();
+      this.results.push(result);
+    } catch (error) {
+      console.error('Task failed:', error);
+    } finally {
+      this.running--;
+      // Add a delay between requests to avoid rate limiting
+      await delay(this.config.delayBetweenRequests);
+      this.processNext();
+    }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async waitForAll(): Promise<any[]> {
+    // If there are tasks running or in queue, wait
+    while (this.running > 0 || this.queue.length > 0) {
+      await delay(100);
+    }
+    return this.results;
+  }
+}
+
+/**
+ * Upload a single image to both ImgBB and Nyckel services
+ */
 export async function uploadImageToBothServices({
   imgbbApiKey,
   edenaiApiKey,
@@ -295,4 +427,31 @@ export async function uploadImageToBothServices({
     console.error('Combined upload failed:', error);
     throw error;
   }
+}
+
+/**
+ * Batch upload multiple images with rate limiting
+ */
+export async function batchUploadImages(
+  images: Array<{ image: File | Blob; name: string }>,
+  imgbbApiKey: string,
+  edenaiApiKey: string,
+  rateLimitConfig: RateLimitConfig = DEFAULT_RATE_LIMIT,
+): Promise<CombinedUploadResult[]> {
+  const queue = new UploadQueue(rateLimitConfig);
+
+  // Add all uploads to the queue
+  for (const { image, name } of images) {
+    queue.add(() =>
+      uploadImageToBothServices({
+        imgbbApiKey,
+        edenaiApiKey,
+        image,
+        imageName: name,
+      }),
+    );
+  }
+
+  // Wait for all uploads to complete
+  return queue.waitForAll();
 }

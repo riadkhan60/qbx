@@ -1,7 +1,8 @@
 // app/api/products/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { uploadImageToBothServices } from '@/actions/ImageActions/UploadImage';
+import { batchUploadImages } from '@/actions/ImageActions/UploadImage';
+
 
 const prisma = new PrismaClient();
 
@@ -52,56 +53,58 @@ export async function POST(req: NextRequest) {
     }
 
     // Process images - using Promise.all to wait for all uploads to complete
-    const processedImages = await Promise.all(
-      images.map(async (image: File, index: number) => {
-        try {
-          const response = await uploadImageToBothServices({
-            imgbbApiKey: imgBBApi,
-            edenaiApiKey: NkAPiKey,
-            image: image,
-            imageName: `${productIdentityCode}_image_${index}.jpg`,
-          });
+    const imageObjects = images.map((image: File, index: number) => ({
+      image,
+      name: `${productIdentityCode}_image_${index}.jpg`,
+    }));
 
-          console.log('Image upload response:', response);
-          return {
-            imageName: response.imageName,
-            imageLink: response.imgbb.imageUrl,
-            deleteHash: response.imgbb.deleteHash,
-          };
-        } catch (error) {
-          console.error('Error uploading image:', error);
-          return null;
-        }
-      }),
-    );
+    // Batch upload all images at once with rate limiting
 
-    // Filter out any failed uploads
-    const validImages = processedImages.filter((img) => img !== null);
+    interface ImageData {
+      imageName: string;
+      imageLink: string;
+      deleteHash: string;
+    }
+    let validImages: ImageData[] = [];
+    try {
+      const processedImages = await batchUploadImages(
+        imageObjects,
+        imgBBApi,
+        NkAPiKey,
+      );
+
+      validImages = processedImages.map((response) => ({
+        imageName: response.imageName,
+        imageLink: response.imgbb.imageUrl,
+        deleteHash: response.imgbb.deleteHash,
+      }));
+    } catch (error) {
+      console.error('Error batch uploading images:', error);
+    }
 
     // Process real images
-    const processedRealImages = await Promise.all(
-      realImages.map(async (image: File, index: number) => {
-        try {
-          const response = await uploadImageToBothServices({
-            imgbbApiKey: imgBBApi,
-            edenaiApiKey: NkAPiKey,
-            image: image,
-            imageName: `${productIdentityCode}_image_${index}.jpg`,
-          });
-          return {
-            imageName: response.imageName,
-            imageLink: response.imgbb.imageUrl,
-            deleteHash: response.imgbb.deleteHash,
-          };
-        } catch (error) {
-          console.error('Error uploading real image:', error);
-          return null;
-        }
-      }),
-    );
+    const realImageObjects = realImages.map((image: File, index: number) => ({
+      image,
+      name: `${productIdentityCode}_real_${index}.jpg`,
+    }));
 
-    // Filter out any failed uploads
-    const validRealImages = processedRealImages.filter((img) => img !== null);
+    // Batch upload all real images at once with rate limiting
+    let validRealImages: { imageName: string; imageLink: string; deleteHash: string }[] = [];
+    try {
+      const processedRealImages = await batchUploadImages(
+        realImageObjects,
+        imgBBApi,
+        NkAPiKey,
+      );
+
+      validRealImages = processedRealImages.map((response) => ({
+        imageName: response.imageName,
+        imageLink: response.imgbb.imageUrl,
+        deleteHash: response.imgbb.deleteHash,
+      }));
+    } catch (error) {
+      console.error('Error batch uploading real images:', error);
+    }
 
     // Create product with related data
     const product = await prisma.product.create({
