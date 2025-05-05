@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { getBusinesses } from '@/actions/business';
 import { useUserStore } from '@/contexts/UserContext/UserContextProvoder';
+import convertImageLinksToFiles from '@/lib/convertImageLinksToFile';
 
 interface ProductVariant {
   name: string;
@@ -51,7 +52,20 @@ export default function ProductCreateForm() {
   const [businessId, setBussinessID] = useState('');
   const [apiKey, setApiKey] = useState([]);
   const [imgBBApi, setImgBBApi] = useState('');
+  const [businesses, setBusinesses] = useState<
+    Array<{
+      id: string;
+      apiTokenEntry?: {
+        fb_page_access_token?: string;
+        eden_ai_api_token?: string;
+        imgbb_token?: string;
+        openAi?: string;
+      };
+      facebookPageId?: string;
+    }>
+  >([]);
 
+  const [postLink, setPostLink] = useState('');
 
   useEffect(() => {
     async function fetchBusinesses() {
@@ -61,6 +75,7 @@ export default function ProductCreateForm() {
         setBussinessID(businesses[0].id);
         setApiKey(businesses[0].apiTokenEntry?.eden_ai_api_token);
         setImgBBApi(businesses[0].apiTokenEntry?.imgbb_token);
+        setBusinesses(businesses);
         setLoading(false);
       }
     }
@@ -132,6 +147,61 @@ export default function ProductCreateForm() {
     setVariants(newVariants);
   };
 
+  const handleSubmitGetPost = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const response = await fetch('/api/facebook-post', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          accessToken: businesses[0].apiTokenEntry?.fb_page_access_token,
+          postLink: postLink,
+          pageID: businesses[0].facebookPageId,
+          openAi: businesses[0].apiTokenEntry?.openAi,
+        }),
+      });
+
+      const data = await response.json();
+
+      setAvailability(data.data.availability || true);
+      setDescription(data.data.description || '');
+      setDiscount(data.data.discount || '0');
+      setPrice(data.data.price || '0');
+      setShortDescription(data.data.shortDescription || '');
+      setProductState(data.data.productState || 'in-Stock');
+      setDeliveryTime(data.data.deliveryTime || '');
+      setName(data.data.name || '');
+      setVariants(
+        data.data.productVarriants.map(
+          (variant: { name: string; isAvailable: boolean }) => ({
+            name: variant.name,
+            isAvailable: variant.isAvailable,
+          }),
+        ),
+      );
+
+      const Imagefiles = await convertImageLinksToFiles(data.images);
+      setSelectedImages(Imagefiles);
+      const imagePreviews = Imagefiles.map((file) => URL.createObjectURL(file));
+      setImagePreviews(imagePreviews);
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch post data');
+      }
+
+      console.log('Post data:', data);
+    } catch (err) {
+      setMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'An unknown error occurred',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
   // Submit the form
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -220,356 +290,406 @@ export default function ProductCreateForm() {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-8 max-w-4xl mx-auto p-6 overflow-auto  rounded-lg shadow-md"
-    >
-      <h1 className="text-2xl font-bold mb-6">Create New Product</h1>
+    <>
+      <form
+        onSubmit={handleSubmitGetPost}
+        className="space-y-8 max-w-4xl mx-auto p-6 overflow-auto  rounded-lg shadow-md"
+      >
+        <h1 className="text-2xl font-bold mb-6">Get Post Link</h1>
 
-      {message && (
-        <div
-          className={`p-4 rounded ${
-            message.type === 'success'
-              ? 'bg-green-100 text-green-700'
-              : 'bg-red-100 text-red-700'
-          }`}
-        >
-          {message.text}
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Basic Details */}
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Basic Details</h2>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-500 mb-1">
-              Name *
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md"
-              required
-            />
+        {message && (
+          <div
+            className={`p-4 rounded ${
+              message.type === 'success'
+                ? 'bg-green-100 text-green-700'
+                : 'bg-red-100 text-red-700'
+            }`}
+          >
+            {message.text}
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-500 mb-1">
-              Product Identity Code *
-            </label>
-            <input
-              type="text"
-              value={productIdentityCode}
-              onChange={(e) => setProductIdentityCode(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-500 mb-1">
-              Short Description
-            </label>
-            <input
-              type="text"
-              value={shortDescription}
-              onChange={(e) => setShortDescription(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-500 mb-1">
-              Description
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md"
-              rows={4}
-            />
+        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-500 mb-1">
+                Post Link
+              </label>
+              <input
+                type="text"
+                value={postLink}
+                onChange={(e) => setPostLink(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md"
+                required
+              />
+            </div>
           </div>
         </div>
 
-        {/* Pricing and Availability */}
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            disabled={loading}
+            className={`px-6 py-3 bg-blue-600 text-white rounded-md ${
+              loading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-blue-700'
+            }`}
+          >
+            {loading ? 'Creating...' : 'Get Post'}
+          </button>
+        </div>
+      </form>
+
+      <div></div>
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-8 max-w-4xl mx-auto p-6 overflow-auto  rounded-lg shadow-md"
+      >
+        <h1 className="text-2xl font-bold mb-6">Create New Product</h1>
+
+        {message && (
+          <div
+            className={`p-4 rounded ${
+              message.type === 'success'
+                ? 'bg-green-100 text-green-700'
+                : 'bg-red-100 text-red-700'
+            }`}
+          >
+            {message.text}
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Basic Details */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Basic Details</h2>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-500 mb-1">
+                Name *
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-500 mb-1">
+                Product Identity Code *
+              </label>
+              <input
+                type="text"
+                value={productIdentityCode}
+                onChange={(e) => setProductIdentityCode(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-500 mb-1">
+                Short Description
+              </label>
+              <input
+                type="text"
+                value={shortDescription}
+                onChange={(e) => setShortDescription(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-500 mb-1">
+                Description
+              </label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md"
+                rows={4}
+              />
+            </div>
+          </div>
+
+          {/* Pricing and Availability */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Pricing & Availability</h2>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-500 mb-1">
+                Price *
+              </label>
+              <input
+                type="number"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md"
+                min="0"
+                step="0.01"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-500 mb-1">
+                Discount
+              </label>
+              <input
+                type="number"
+                value={discount}
+                onChange={(e) => setDiscount(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md"
+                min="0"
+                step="0.01"
+              />
+            </div>
+
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="availability"
+                checked={availability}
+                onChange={() => setAvailability(!availability)}
+                className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+              />
+              <label
+                htmlFor="availability"
+                className="ml-2 text-sm text-gray-500"
+              >
+                Available
+              </label>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-500 mb-1">
+                Product State
+              </label>
+              <select
+                value={productState}
+                onChange={(e) => setProductState(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md"
+              >
+                <option value="in-Stock">In Stock</option>
+                <option value="out-of-Stock">Out of Stock</option>
+                <option value="pre-order">Pre Order</option>
+                <option value="pre-order-closed">Pre Order Closed</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-500 mb-1">
+                Delivery Time
+              </label>
+              <input
+                type="text"
+                value={deliveryTime}
+                onChange={(e) => setDeliveryTime(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md"
+                placeholder="e.g., 3-5 business days"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Warranty Information */}
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Pricing & Availability</h2>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-500 mb-1">
-              Price *
-            </label>
-            <input
-              type="number"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md"
-              min="0"
-              step="0.01"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-500 mb-1">
-              Discount
-            </label>
-            <input
-              type="number"
-              value={discount}
-              onChange={(e) => setDiscount(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md"
-              min="0"
-              step="0.01"
-            />
-          </div>
+          <h2 className="text-xl font-semibold">Warranty</h2>
 
           <div className="flex items-center">
             <input
               type="checkbox"
-              id="availability"
-              checked={availability}
-              onChange={() => setAvailability(!availability)}
+              id="hasWarranty"
+              checked={hasWarranty}
+              onChange={() => setHasWarranty(!hasWarranty)}
               className="h-4 w-4 text-blue-600 border-gray-300 rounded"
             />
-            <label
-              htmlFor="availability"
-              className="ml-2 text-sm text-gray-500"
-            >
-              Available
+            <label htmlFor="hasWarranty" className="ml-2 text-sm text-gray-500">
+              Has Warranty
             </label>
           </div>
 
+          {hasWarranty && (
+            <div>
+              <label className="block text-sm font-medium text-gray-500 mb-1">
+                Warranty Time
+              </label>
+              <input
+                type="text"
+                value={warrantyTime}
+                onChange={(e) => setWarrantyTime(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md"
+                placeholder="e.g., 1 year"
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Images */}
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold">Product Images</h2>
+
+          {/* Regular Images */}
           <div>
-            <label className="block text-sm font-medium text-gray-500 mb-1">
-              Product State
+            <label className="block text-sm font-medium text-gray-500 mb-2">
+              Display Images
             </label>
-            <select
-              value={productState}
-              onChange={(e) => setProductState(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md"
-            >
-              <option value="in-Stock">In Stock</option>
-              <option value="out-of-Stock">Out of Stock</option>
-              <option value="pre-order">Pre Order</option>
-              <option value="pre-order-closed">Pre Order Closed</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-500 mb-1">
-              Delivery Time
-            </label>
-            <input
-              type="text"
-              value={deliveryTime}
-              onChange={(e) => setDeliveryTime(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md"
-              placeholder="e.g., 3-5 business days"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Warranty Information */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Warranty</h2>
-
-        <div className="flex items-center">
-          <input
-            type="checkbox"
-            id="hasWarranty"
-            checked={hasWarranty}
-            onChange={() => setHasWarranty(!hasWarranty)}
-            className="h-4 w-4 text-blue-600 border-gray-300 rounded"
-          />
-          <label htmlFor="hasWarranty" className="ml-2 text-sm text-gray-500">
-            Has Warranty
-          </label>
-        </div>
-
-        {hasWarranty && (
-          <div>
-            <label className="block text-sm font-medium text-gray-500 mb-1">
-              Warranty Time
-            </label>
-            <input
-              type="text"
-              value={warrantyTime}
-              onChange={(e) => setWarrantyTime(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md"
-              placeholder="e.g., 1 year"
-            />
-          </div>
-        )}
-      </div>
-
-      {/* Images */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Product Images</h2>
-
-        {/* Regular Images */}
-        <div>
-          <label className="block text-sm font-medium text-gray-500 mb-2">
-            Display Images
-          </label>
-          <div className="flex flex-wrap gap-4 mt-2">
-            {imagePreviews.map((preview, index) => (
-              <div key={index} className="relative w-24 h-24">
-                <Image
-                  src={preview}
-                  alt={`Preview ${index}`}
-                  width={96}
-                  height={96}
-                  className="object-cover rounded-md"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeImage(index)}
-                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center"
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={() => imageInputRef.current?.click()}
-              className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-md flex items-center justify-center text-gray-400 hover:text-gray-500 hover:border-gray-400"
-            >
-              +
-            </button>
-            <input
-              type="file"
-              ref={imageInputRef}
-              onChange={(e) => handleImageChange(e)}
-              multiple
-              accept="image/*"
-              className="hidden"
-            />
-          </div>
-        </div>
-
-        {/* Real Images */}
-        <div>
-          <label className="block text-sm font-medium text-gray-500 mb-2">
-            Real Product Images
-          </label>
-          <div className="flex flex-wrap gap-4 mt-2">
-            {realImagePreviews.map((preview, index) => (
-              <div key={index} className="relative w-24 h-24">
-                <Image
-                  src={preview}
-                  alt={`Real Preview ${index}`}
-                  width={96}
-                  height={96}
-                  className="object-cover rounded-md"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeImage(index, true)}
-                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center"
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={() => realImageInputRef.current?.click()}
-              className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-md flex items-center justify-center text-gray-400 hover:text-gray-500 hover:border-gray-400"
-            >
-              +
-            </button>
-            <input
-              type="file"
-              ref={realImageInputRef}
-              onChange={(e) => handleImageChange(e, true)}
-              multiple
-              accept="image/*"
-              className="hidden"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Variants */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Product Variants</h2>
-
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={variantName}
-            onChange={(e) => setVariantName(e.target.value)}
-            className="flex-1 p-2 border border-gray-300 rounded-md"
-            placeholder="Variant name (e.g., Red, Large, etc.)"
-          />
-          <button
-            type="button"
-            onClick={addVariant}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500"
-          >
-            Add
-          </button>
-        </div>
-
-        {variants.length > 0 && (
-          <div className="mt-4">
-            <h3 className="text-lg font-medium mb-2">Added Variants</h3>
-            <ul className="space-y-2">
-              {variants.map((variant, index) => (
-                <li
-                  key={index}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-md"
-                >
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={variant.isAvailable}
-                      onChange={() => toggleVariantAvailability(index)}
-                      className="h-4 w-4 text-blue-600 border-gray-300 rounded mr-3"
-                    />
-                    <span>{variant.name}</span>
-                    <span
-                      className={`ml-3 px-2 py-1 text-xs rounded ${
-                        variant.isAvailable
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}
-                    >
-                      {variant.isAvailable ? 'Available' : 'Unavailable'}
-                    </span>
-                  </div>
+            <div className="flex flex-wrap gap-4 mt-2">
+              {imagePreviews.map((preview, index) => (
+                <div key={index} className="relative w-24 h-24">
+                  <Image
+                    src={preview}
+                    alt={`Preview ${index}`}
+                    width={96}
+                    height={96}
+                    className="object-cover rounded-md"
+                  />
                   <button
                     type="button"
-                    onClick={() => removeVariant(index)}
-                    className="text-red-500 hover:text-red-700"
+                    onClick={() => removeImage(index)}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center"
                   >
-                    Remove
+                    ×
                   </button>
-                </li>
+                </div>
               ))}
-            </ul>
+              <button
+                type="button"
+                onClick={() => imageInputRef.current?.click()}
+                className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-md flex items-center justify-center text-gray-400 hover:text-gray-500 hover:border-gray-400"
+              >
+                +
+              </button>
+              <input
+                type="file"
+                ref={imageInputRef}
+                onChange={(e) => handleImageChange(e)}
+                multiple
+                accept="image/*"
+                className="hidden"
+              />
+            </div>
           </div>
-        )}
-      </div>
 
-      {/* Submit Button */}
-      <div className="flex justify-end">
-        <button
-          type="submit"
-          disabled={loading}
-          className={`px-6 py-3 bg-blue-600 text-white rounded-md ${
-            loading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-blue-700'
-          }`}
-        >
-          {loading ? 'Creating...' : 'Create Product'}
-        </button>
-      </div>
-    </form>
+          {/* Real Images */}
+          <div>
+            <label className="block text-sm font-medium text-gray-500 mb-2">
+              Real Product Images
+            </label>
+            <div className="flex flex-wrap gap-4 mt-2">
+              {realImagePreviews.map((preview, index) => (
+                <div key={index} className="relative w-24 h-24">
+                  <Image
+                    src={preview}
+                    alt={`Real Preview ${index}`}
+                    width={96}
+                    height={96}
+                    className="object-cover rounded-md"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeImage(index, true)}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => realImageInputRef.current?.click()}
+                className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-md flex items-center justify-center text-gray-400 hover:text-gray-500 hover:border-gray-400"
+              >
+                +
+              </button>
+              <input
+                type="file"
+                ref={realImageInputRef}
+                onChange={(e) => handleImageChange(e, true)}
+                multiple
+                accept="image/*"
+                className="hidden"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Variants */}
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold">Product Variants</h2>
+
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={variantName}
+              onChange={(e) => setVariantName(e.target.value)}
+              className="flex-1 p-2 border border-gray-300 rounded-md"
+              placeholder="Variant name (e.g., Red, Large, etc.)"
+            />
+            <button
+              type="button"
+              onClick={addVariant}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-500"
+            >
+              Add
+            </button>
+          </div>
+
+          {variants.length > 0 && (
+            <div className="mt-4">
+              <h3 className="text-lg font-medium mb-2">Added Variants</h3>
+              <ul className="space-y-2">
+                {variants.map((variant, index) => (
+                  <li
+                    key={index}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-md"
+                  >
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={variant.isAvailable}
+                        onChange={() => toggleVariantAvailability(index)}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded mr-3"
+                      />
+                      <span>{variant.name}</span>
+                      <span
+                        className={`ml-3 px-2 py-1 text-xs rounded ${
+                          variant.isAvailable
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}
+                      >
+                        {variant.isAvailable ? 'Available' : 'Unavailable'}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeVariant(index)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      Remove
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+
+        {/* Submit Button */}
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            disabled={loading}
+            className={`px-6 py-3 bg-blue-600 text-white rounded-md ${
+              loading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-blue-700'
+            }`}
+          >
+            {loading ? 'Creating...' : 'Create Product'}
+          </button>
+        </div>
+      </form>
+    </>
   );
 }
