@@ -1,4 +1,7 @@
+'use client';
+import { EmptyState } from '@/components/CreateBusiness/EmptyState';
 import { AppSidebar } from '../../components/DashBoard/SIdeBar/app-sidebar';
+import { Files, FileText, Link } from 'lucide-react';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -13,10 +16,10 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
+import BusinessCards from '@/components/temporary/BusinessCards/BusinessCards';
 
 export default function Page() {
   return (
-  
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
@@ -40,12 +43,30 @@ export default function Page() {
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-            <div className="aspect-video rounded-xl bg-muted/50" />
-            <div className="aspect-video rounded-xl bg-muted/50" />
-            <div className="aspect-video rounded-xl bg-muted/50" />
+          <div className="grid auto-rows-min gap-4 md:grid-cols-2">
+            <div className=" rounded-xl flex justify-center items-centerborder-2  border-muted/50 bg-background">
+              <EmptyState
+                title="Create New Business"
+                description="Start managing a new business by creating it here"
+                icons={[FileText, Link, Files]}
+                action={{
+                  label: 'New Business',
+                  onClick: () => console.log('Create form clicked'),
+                }}
+              />
+            </div>
+            <div className="aspect-[2.5/1] rounded-xl bg-muted/50" />
           </div>
-          <div className="min-h-[100vh] flex-1 rounded-xl bg-muted/50 md:min-h-min" />
+          <div className="flex-1 flex justify-center items-center p-4 bg-background rounded-xl shadow-sm border">
+            <div className="">
+              <h2 className="text-xl font-semibold mb-4">
+                Your Existing Businesses
+              </h2>
+              <div className="bg-background max-w-7xl">
+                <BusinessCards />
+              </div>
+            </div>
+          </div>
         </div>
       </SidebarInset>
     </SidebarProvider>

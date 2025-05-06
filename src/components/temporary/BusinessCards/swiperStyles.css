@@ -1,0 +1,145 @@
+/* Enhanced swiperStyles.css */
+.swiper-container {
+  width: 100%;
+  padding: 30px 0;
+  overflow: hidden;
+}
+
+.mySwiper {
+  width: 100%;
+  padding-top: 30px;
+  padding-bottom: 30px;
+}
+
+.swiper-slide {
+  background: #111;
+  border-radius: 16px;
+  width: 280px;
+  height: 360px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0.5;
+  transform: scale(0.85);
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+
+.swiper-slide-active {
+  opacity: 1;
+  transform: scale(1);
+  z-index: 2;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2), 0 6px 6px rgba(0, 0, 0, 0.15);
+}
+
+.card {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 16px;
+  position: relative;
+  background: #1a1a1a;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.swiper-slide-active .card::before {
+  opacity: 1;
+}
+
+.card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.card h3 {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  color: white;
+  font-size: 1.3rem;
+  z-index: 2;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.4s ease;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.7);
+  padding: 5px 10px;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.swiper-slide-active .card h3 {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.swiper-pagination {
+  position: relative;
+  bottom: -10px !important;
+}
+
+.swiper-pagination-bullet {
+  width: 8px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.4);
+  transition: all 0.3s ease;
+}
+
+.swiper-pagination-bullet-active {
+  background: #fff;
+  width: 20px;
+  border-radius: 4px;
+}
+
+/* Mobile optimization */
+@media (max-width: 640px) {
+  .swiper-container {
+    padding: 15px 0;
+  }
+
+  .mySwiper {
+    padding-top: 15px;
+    padding-bottom: 15px;
+  }
+
+  .swiper-slide {
+    width: 220px;
+    height: 300px;
+  }
+
+  .card h3 {
+    font-size: 1.1rem;
+    bottom: 15px;
+    left: 15px;
+    right: 15px;
+  }
+}
+
+/* Ensure there's enough contrast and proper spacing */
+@media (min-width: 1024px) {
+  .swiper-container {
+    padding: 20px 0;
+  }
+  
+  .swiper-slide {
+    margin: 0 5px;
+  }
+}

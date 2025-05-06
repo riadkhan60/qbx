@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Call your Express backend
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
+    const backendUrl = process.env.BACKEND_URL || 'https://posttoform.onrender.com';
     const response = await fetch(`${backendUrl}/api/extract-post`, {
       method: 'POST',
       headers: {
