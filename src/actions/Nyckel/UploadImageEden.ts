@@ -1,8 +1,4 @@
-import axios from 'axios';
-import {
-  nyckelUploadImage,
-  NyckelApiError,
-} from '../Nyckel/DirectNyckelUpload';
+import axios, { AxiosError } from 'axios';
 
 // ImgBB Response Interfaces
 interface ImgBBUploadResponse {
@@ -37,19 +33,32 @@ interface ImgBBUploadResponse {
   status: number;
 }
 
-// Updated Nyckel Response Interface for direct API
-interface NyckelDirectResponse {
-  id: string;
-  data: string;
-  externalId?: string;
+interface NyckelResponse {
+  status: string;
+  original_response: {
+    id: string;
+    data: string;
+    externalId: string;
+  };
+  usage: null | unknown;
+  cost: number;
+}
+
+interface EdenAIResponse {
+  nyckel: NyckelResponse;
+  [key: string]: unknown;
 }
 
 // Upload Options Interfaces
 interface NyckelUploadOptions {
   file?: File;
   file_url?: string;
-  functionId?: string;
-  externalId?: string;
+  settings?: Record<string, unknown>;
+  fallback_providers?: string[];
+  response_as_dict?: boolean;
+  attributes_as_list?: boolean;
+  show_base_64?: boolean;
+  show_original_response?: boolean;
 }
 
 interface ImgBBUploadOptions {
@@ -74,11 +83,12 @@ interface CombinedUploadResult {
 
 interface CombinedUploadParams {
   imgbbApiKey: string;
-  nyckelFunctionId: string;
+  edenaiApiKey: string;
   image: File | Blob;
   imageName: string;
   imgbbOptions?: ImgBBUploadOptions;
   nyckelOptions?: Omit<NyckelUploadOptions, 'file' | 'file_url'>;
+  nyckelProviders?: string[];
 }
 
 // Rate limiting configuration
@@ -158,23 +168,26 @@ async function uploadToImgBB(
 }
 
 /**
- * Upload an image to Nyckel using direct API (replacing EdenAI wrapper)
+ * Upload an image to Nyckel (via EdenAI)
  */
 async function uploadToNyckel({
+  apiKey,
+  providers = ['nyckel'],
   imageName,
   file,
   file_url,
-  functionId,
   retryConfig = DEFAULT_RATE_LIMIT,
   retryCount = 0,
+  ...options
 }: {
+  apiKey: string;
+  providers?: string[];
   imageName: string;
   file?: File;
   file_url?: string;
-  functionId?: string;
   retryConfig?: RateLimitConfig;
   retryCount?: number;
-}): Promise<{ nyckel: NyckelDirectResponse }> {
+} & NyckelUploadOptions): Promise<EdenAIResponse> {
   try {
     if (!file && !file_url) {
       throw new Error('Either file or file_url must be provided');
@@ -183,28 +196,63 @@ async function uploadToNyckel({
       throw new Error('Cannot provide both file and file_url');
     }
 
-    console.log(`Uploading to Nyckel (direct API): ${imageName}`);
-
-    const result = await nyckelUploadImage({
-      file,
-      file_url,
-      externalId: imageName,
-      functionId,
-    });
-
-    console.log('Direct Nyckel upload successful:', result.id);
-
-    // Return in similar format to maintain compatibility with existing code
-    return {
-      nyckel: result,
+    const commonParams: Record<string, unknown> = {
+      providers: providers.join(','),
+      image_name: imageName,
+      response_as_dict: options.response_as_dict ?? true,
+      attributes_as_list: options.attributes_as_list ?? false,
+      show_base_64: options.show_base_64 ?? true,
+      show_original_response: options.show_original_response ?? true,
     };
-  } catch (error) {
-    // Handle Nyckel-specific errors
-    if (error instanceof NyckelApiError) {
-      console.error('Nyckel API Error:', error.message, error.statusCode);
 
-      // Handle rate limiting with retry logic
-      if (error.statusCode === 429 && retryCount < retryConfig.maxRetries) {
+    if (options.settings) {
+      commonParams.settings = JSON.stringify(options.settings);
+    }
+    if (options.fallback_providers) {
+      commonParams.fallback_providers = options.fallback_providers.join(',');
+    }
+
+    let data: FormData | Record<string, unknown>;
+    let headers: Record<string, string>;
+
+    if (file) {
+      const formData = new FormData();
+      formData.append('file', file);
+      Object.entries(commonParams).forEach(([key, value]) => {
+        formData.append(key, String(value));
+      });
+      data = formData;
+
+      headers = {
+        Authorization: `Bearer ${apiKey}`,
+        Accept: 'application/json',
+      };
+    } else {
+      data = {
+        ...commonParams,
+        file_url: file_url!,
+      };
+
+      headers = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+        Accept: 'application/json',
+      };
+    }
+
+    const response = await axios.post<EdenAIResponse>(
+      'https://api.edenai.run/v2/image/search/upload_image',
+      data,
+      { headers },
+    );
+
+    return response.data;
+  } catch (error) {
+    // Handle specific error types differently
+    const axiosError = error as AxiosError;
+    if (axiosError.response?.status === 429) {
+      // Rate limit hit - wait longer before retry
+      if (retryCount < retryConfig.maxRetries) {
         const waitTime = retryConfig.retryDelay * Math.pow(2, retryCount); // Exponential backoff
         console.log(
           `Rate limit hit. Waiting ${waitTime}ms before retry ${
@@ -213,30 +261,25 @@ async function uploadToNyckel({
         );
         await delay(waitTime);
         return uploadToNyckel({
+          apiKey,
+          providers,
           imageName,
           file,
           file_url,
-          functionId,
           retryConfig,
           retryCount: retryCount + 1,
+          ...options,
         });
       }
-
-      // Handle authentication errors
-      if (error.statusCode === 401) {
-        console.error(
-          'Authentication failed. Check NYCKEL_CLIENT_ID and NYCKEL_SECRET_KEY environment variables.',
-        );
-      }
-
-      // Handle function not found errors
-      if (error.statusCode === 404) {
-        console.error('Function not found. Check your function ID.');
-      }
+    } else if (axiosError.response?.status === 400) {
+      console.error(
+        'Bad request to Nyckel API. Check request format:',
+        axiosError.response.data,
+      );
     }
 
     if (error instanceof Error) {
-      console.error('Nyckel upload error:', error.message);
+      console.error(error.message);
     }
     throw error;
   }
@@ -307,11 +350,12 @@ class UploadQueue {
  */
 export async function uploadImageToBothServices({
   imgbbApiKey,
-  nyckelFunctionId,
+  edenaiApiKey,
   image,
   imageName,
   imgbbOptions = {},
   nyckelOptions = {},
+  nyckelProviders = ['nyckel'],
 }: CombinedUploadParams): Promise<CombinedUploadResult> {
   try {
     // Ensure imageName is set in ImgBB options
@@ -337,13 +381,14 @@ export async function uploadImageToBothServices({
 
     // Step 2: Upload to Nyckel (after successful ImgBB upload)
     console.log(`Uploading image "${imageName}" to Nyckel...`);
-    let nyckelResponse: { nyckel: NyckelDirectResponse };
+    let nyckelResponse: EdenAIResponse;
     try {
       nyckelResponse = await uploadToNyckel({
-        imageName,
+        apiKey: edenaiApiKey,
+        providers: nyckelProviders,
+        imageName: imageName,
         file: image instanceof File ? image : new File([image], imageName),
         ...nyckelOptions,
-        functionId: nyckelFunctionId,
       });
       console.log('Successfully uploaded to Nyckel');
     } catch (nyckelError) {
@@ -374,8 +419,8 @@ export async function uploadImageToBothServices({
       },
       nyckel: {
         success: true,
-        id: nyckelResponse.nyckel?.id,
-        externalId: nyckelResponse.nyckel?.externalId,
+        id: nyckelResponse.nyckel?.original_response?.id,
+        externalId: nyckelResponse.nyckel?.original_response?.externalId,
       },
     };
   } catch (error) {
@@ -391,7 +436,6 @@ export async function batchUploadImages(
   images: Array<{ image: File | Blob; name: string }>,
   imgbbApiKey: string,
   edenaiApiKey: string,
-  nyckelFunctionId: string,
   rateLimitConfig: RateLimitConfig = DEFAULT_RATE_LIMIT,
 ): Promise<CombinedUploadResult[]> {
   const queue = new UploadQueue(rateLimitConfig);
@@ -401,9 +445,9 @@ export async function batchUploadImages(
     queue.add(() =>
       uploadImageToBothServices({
         imgbbApiKey,
+        edenaiApiKey,
         image,
         imageName: name,
-        nyckelFunctionId,
       }),
     );
   }

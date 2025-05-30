@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
     const warrantyTime = formData.get('warrantyTime') as string;
     const variants = JSON.parse((formData.get('variants') as string) || '[]');
     const NkAPiKey = formData.get('NkAPiKey') as string;
+    const nyckelFunctionId = formData.get('nyckelFunctionId') as string;
     const imgBBApi = formData.get('imgBBApiKey') as string;
 
     // Get all image files
@@ -71,6 +72,7 @@ export async function POST(req: NextRequest) {
         imageObjects,
         imgBBApi,
         NkAPiKey,
+        nyckelFunctionId,
       );
 
       validImages = processedImages.map((response) => ({
@@ -95,6 +97,7 @@ export async function POST(req: NextRequest) {
         realImageObjects,
         imgBBApi,
         NkAPiKey,
+        nyckelFunctionId,
       );
 
       validRealImages = processedRealImages.map((response) => ({

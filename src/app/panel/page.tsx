@@ -52,12 +52,14 @@ export default function ProductCreateForm() {
   const [businessId, setBussinessID] = useState('');
   const [apiKey, setApiKey] = useState([]);
   const [imgBBApi, setImgBBApi] = useState('');
+  const [nyckelFunctionId, setNyckelFunctionId] = useState('');
   const [businesses, setBusinesses] = useState<
     Array<{
       id: string;
       apiTokenEntry?: {
         fb_page_access_token?: string;
         eden_ai_api_token?: string;
+        Nyckel_function_id?: string;
         imgbb_token?: string;
         openAi?: string;
       };
@@ -75,6 +77,7 @@ export default function ProductCreateForm() {
         setBussinessID(businesses[0].id);
         setApiKey(businesses[0].apiTokenEntry?.eden_ai_api_token);
         setImgBBApi(businesses[0].apiTokenEntry?.imgbb_token);
+        setNyckelFunctionId(businesses[0].apiTokenEntry?.Nyckel_function_id);
         setBusinesses(businesses);
         setLoading(false);
       }
@@ -231,6 +234,7 @@ export default function ProductCreateForm() {
       formData.append('variants', JSON.stringify(variants));
       formData.append('NkAPiKey', apiKey.toString());
       formData.append('imgBBApiKey', imgBBApi.toString());
+      formData.append('nyckelFunctionId', nyckelFunctionId.toString());
 
       // Append images
       selectedImages.forEach((image) => {

@@ -80,6 +80,7 @@ model ApiTokenEntry {
   graph_page_access_token String?
   eden_ai_api_token       String?
   imgbb_token             String?
+  Nyckel_function_id      String?
   business                Business @relation(fields: [businessId], references: [id])
 
   @@index([businessId])

@@ -6,6 +6,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { accessToken, postLink, pageID, openAi } = body;
 
+    console.log('Received data:', body);
     // Validate required fields
     if (!accessToken || !postLink || !pageID) {
       return NextResponse.json(
@@ -18,7 +19,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Call your Express backend
-    const backendUrl = process.env.BACKEND_URL || 'https://posttoform.onrender.com';
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:3006';
     const response = await fetch(`${backendUrl}/api/extract-post`, {
       method: 'POST',
       headers: {
